@@ -1,50 +1,7 @@
 let alp;
+let alpMap;
 let tableData;
-
-function calculateRPN(tokens) {
-    let stack = [];
-
-    // Helper functions for logical operators
-    const applyOperator = (operator, operand1, operand2) => {
-        switch (operator) {
-            case "^": // AND
-                return operand1 && operand2;
-            case "v": // OR
-                return operand1 || operand2;
-            case "~": // NOT (Unary)
-                return !operand1;
-            case "->": // Implication (p -> q)
-                return !operand1 || operand2;
-            case "<->": // Biconditional (p <-> q)
-                return operand1 === operand2;
-            default:
-                throw new Error(`Unknown operator: ${operator}`);
-        }
-    };
-
-    for (let token of tokens) {
-        if (["^", "v", "~", "->", "<->"].includes(token)) {
-            // Apply operator: pop operands, compute, and push result
-            if (token === "~") {
-                // Unary operator (NOT)
-                let operand1 = stack.pop();
-                stack.push(applyOperator(token, operand1));
-            } else {
-                // Binary operators (AND, OR, Implication, Biconditional)
-                let operand2 = stack.pop();
-                let operand1 = stack.pop();
-                stack.push(applyOperator(token, operand1, operand2));
-            }
-        } else {
-            // Operand: push value onto stack
-            stack.push(token);
-        }
-    }
-
-    // The final result will be the only element left on the stack
-    return stack.pop();
-}
-
+let vars;
 
 
 function perm(n, sol, len) {
@@ -63,6 +20,7 @@ function perm(n, sol, len) {
 
 function genTable(n){
     let sol = new Array(n);
+    let RPN = toRPN(vars);
     perm(n, sol, 0);
     // for(let i = 0; i < tableData.length; i++){
     //     console.log(tableData[i]);
@@ -81,6 +39,12 @@ function genTable(n){
         cell.appendChild(cellText);
         row.appendChild(cell);
     }
+
+    const cell = document.createElement("td");
+    const cellText = document.createTextNode("formula");
+    cell.appendChild(cellText);
+    row.appendChild(cell);
+
     thead.appendChild(row);
 
     for (let i = 0; i < tableData.length; i++) {
@@ -92,6 +56,26 @@ function genTable(n){
             cell.appendChild(cellText);
             row.appendChild(cell);
         }
+
+        let rowCalculate = [];
+        for(let j = 0; j < RPN.length; j++){
+            if(isAlphabet(RPN[j]) && RPN[j] != "v"){
+                if(tableData[i][alpMap.get(RPN[j])] == "T"){
+                    rowCalculate.push(true);
+                }
+                else{
+                    rowCalculate.push(false);
+                }
+            }
+            else{
+                rowCalculate.push(RPN[j]);
+            }
+        }
+        const cell = document.createElement("td");
+        const cellText = document.createTextNode((calculateRPN(rowCalculate)) ? "T" : "F");
+        cell.appendChild(cellText);
+        row.appendChild(cell);
+        
         tbody.appendChild(row);
     }
 
@@ -116,10 +100,11 @@ function isAlphabet(char){
 const answer = document.getElementById("inp");
 answer.addEventListener("input", function(){
     clearTable();
-    let vars = [];
-    //let alphabet = new Set();
+    vars = [];
     alp = [];
+    alpMap = new Map();
     tableData = [];
+    let pos = 0;
     let val = answer.value + "    ";
     for (i = 0; i < val.length; i++){
         if(val[i] == "("){
@@ -168,27 +153,20 @@ answer.addEventListener("input", function(){
             // ~
             vars.push("~");
             i += 2;
-
-            // if(isAlphabet(val[i+3])){
-            //     vars.push("~" + val[i+3]);
-            //     i += 3;
-            // }
         }
         else if(val[i] == "!" || val[i] == "~"){
             // ~
             vars.push("~");
-            // if(isAlphabet(val[i+3])){
-            //     vars.push("~" + val[i+3]);
-            //     i += 3;
-            // }
         }
         else if(isAlphabet(val[i])){
             // Alphabet
             vars.push(val[i]);
-            //alphabet.add(val[i]);
             if(!alp.includes(val[i])){
                 alp.push(val[i]);
+                alpMap.set(val[i], pos);
+                pos++;
             }
+            
         }
         else if(val[i] == " "){
 
@@ -208,19 +186,20 @@ answer.addEventListener("input", function(){
         genTable(size);
     }
     adjustFooter();
+    //console.log(alpMap);
 });
 
 
 function precedence(op) {
-    if (op === '~') return 4; // NOT (highest precedence for unary operator)
-    if (op === '^') return 3; // AND
-    if (op === 'v') return 2; // OR
-    if (op === '<->') return 1; // Biconditional
-    if (op === '->') return 0; // Implication
+    if (op === '~') return 4;
+    if (op === '^') return 3;
+    if (op === 'v') return 2; 
+    if (op === '<->') return 1;
+    if (op === '->') return 0;
     return -1;
 }
 function isLeftAssociative(op) {
-    return op !== '<->'; // Biconditional is the only non-left-associative operator
+    return op !== '<->';
 }
 function toRPN(tokens) {
     let output = [];
@@ -237,7 +216,7 @@ function toRPN(tokens) {
             while(stack.length > 0 && stack[stack.length - 1] !== '(') {
                 output.push(stack.pop());
             }
-            stack.pop(); // Pop '(' from the stack
+            stack.pop(); // pop (
         }
         else if(['^', 'v', '<->', '->', '~'].includes(token))
         {
@@ -250,23 +229,60 @@ function toRPN(tokens) {
         }
         else
         {
-            output.push(token); // Operand (variable like a, b, etc.)
+            output.push(token); //var
         }
     }
-    // Pop all operators from the stack
     while (stack.length > 0) {
         output.push(stack.pop());
     }
     return output;
 }
 
+
+function calculateRPN(tokens) {
+    let stack = [];
+
+    const applyOperator = (operator, operand1, operand2) => {
+        switch (operator) {
+            case "^": // and
+                return operand1 && operand2;
+            case "v": // or
+                return operand1 || operand2;
+            case "~": // not
+                return !operand1;
+            case "->": // imply
+                return !operand1 || operand2;
+            case "<->": // equiv
+                return operand1 === operand2;
+            default:
+                throw new Error(`Unknown operator: ${operator}`);
+        }
+    };
+
+    for (let token of tokens) {
+        if (["^", "v", "~", "->", "<->"].includes(token)) {
+            if (token === "~") {
+                let operand1 = stack.pop();
+                stack.push(applyOperator(token, operand1));
+            } else {
+                let operand2 = stack.pop();
+                let operand1 = stack.pop();
+                stack.push(applyOperator(token, operand1, operand2));
+            }
+        } else {
+            stack.push(token);
+        }
+    }
+
+    return stack.pop();
+}
+
+
 window.addEventListener('load', adjustFooter);
 window.addEventListener('resize', adjustFooter);
-
 function adjustFooter(){
     var pageHeight = document.documentElement.scrollHeight;
     var viewportHeight = window.innerHeight;
-    console.log(pageHeight+" | "+viewportHeight); 
     const footer = document.getElementById("footer");
 
     if(pageHeight > viewportHeight){
