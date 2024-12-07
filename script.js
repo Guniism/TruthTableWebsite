@@ -2,7 +2,7 @@ let alp;
 let alpMap;
 let tableData;
 let vars;
-
+let formula;
 
 function perm(n, sol, len) {
     if (len < n) {
@@ -35,13 +35,22 @@ function genTable(n){
     const row = document.createElement("tr");
     for (let i = 0; i < n; i++){
         const cell = document.createElement("td");
+        if(i == 0){
+            cell.style.borderTopLeftRadius = "7px";
+        }
         const cellText = document.createTextNode(alp[i]);
+        cell.style.paddingLeft = "20px";
+        cell.style.paddingRight = "20px";
         cell.appendChild(cellText);
         row.appendChild(cell);
     }
 
     const cell = document.createElement("td");
-    const cellText = document.createTextNode("formula");
+    cell.style.borderTopRightRadius = "7px";
+    cell.style.borderLeft = "1px solid #3B3B3C";
+    cell.style.paddingLeft = "20px";
+    cell.style.paddingRight = "20px";
+    const cellText = document.createTextNode(formula);
     cell.appendChild(cellText);
     row.appendChild(cell);
 
@@ -54,6 +63,7 @@ function genTable(n){
             const cell = document.createElement("td");
             const cellText = document.createTextNode(tableData[i][j]);
             cell.appendChild(cellText);
+            cell.style.borderTop = "1px solid #3B3B3C";
             row.appendChild(cell);
         }
 
@@ -73,6 +83,8 @@ function genTable(n){
         }
         const cell = document.createElement("td");
         const cellText = document.createTextNode((calculateRPN(rowCalculate)) ? "T" : "F");
+        cell.style.borderLeft = "1px solid #3B3B3C";
+        cell.style.borderTop = "1px solid #3B3B3C";
         cell.appendChild(cellText);
         row.appendChild(cell);
         
@@ -104,6 +116,7 @@ answer.addEventListener("input", function(){
     alp = [];
     alpMap = new Map();
     tableData = [];
+    formula = "";
     let pos = 0;
     let val = answer.value + "    ";
     for (i = 0; i < val.length; i++){
@@ -178,9 +191,23 @@ answer.addEventListener("input", function(){
         
     }
 
-
-    //console.log(vars);
-    console.log(toRPN(vars)+" | "+alp);
+    // console.log(vars);
+    for(let i = 0; i < vars.length; i++){
+        if(vars[i] == ")"){
+            formula = formula.slice(0, -1);
+            formula += vars[i] + " ";
+        }
+        else if(vars[i] == "~"){
+            formula += vars[i];
+        }
+        else if(i === vars.length-1 || vars[i] == "("){
+            formula += vars[i];
+        }
+        else{
+            formula += vars[i] + " ";
+        }
+    }
+    //console.log(toRPN(vars)+" | "+alp);
     let size = alp.length;
     if(size > 0){
         genTable(size);

@@ -30,17 +30,22 @@ h1{
     color: #DCDCDC;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 45px;
-    margin-bottom: 45px;
-    width: 400px;
+    /* margin-top: 45px;
+    margin-bottom: 45px; */
+    /* width: 400px; */
     border: 1px solid #3B3B3C;
     border-collapse: separate;
     border-radius: 8px; 
     border-spacing: 0;
 }
-/* #mainHead{
-    background-color: #525252;
-} */
+
+#mainTable tbody tr:hover {
+    background-color: #333333;
+}
+#mainHead{
+    background-color: #454545;
+}
+
 footer{
     position: fixed; 
     bottom: 0;
@@ -54,4 +59,14 @@ footer{
 
 #Guniism:hover{
     color: #52eb73;
+}
+
+#mainArea{
+    width: 100%;
+    /* border: solid; */
+    display: inline-block;
+    white-space: nowrap; 
+    overflow-x: auto; 
+    margin-top: 45px;
+    margin-bottom: 45px;
 }
